@@ -78,16 +78,44 @@ class UgDbManagement{
 	}
 		
 	
-	function get_group(){
+	function get_group($ID = 0){
 		
+		$info = array();
+		
+		if($ID > 0){
+			global $wpdb;
+			$group = $wpdb->get_row("select * from $this->group where ID = '$ID'");
+			if($group){
+				$info = array(
+					'ID' => $group->ID,
+					'name' => $group->name,
+					'domain' => $group->domain
+				);
+			}
+		}
+		
+		return $info;
 	}
 	
 	function get_group_meta(){
 		
 	}
 	
-	function get_group_metas(){
+	function get_group_metas($group_id){
+		global $wpdb;
+		$metas = array();
 		
+		if($group_id > 0){
+			$results = $wpdb->get_results("select meta_key, meta_value FROM $this->group_meta where group_id = '$group_id'");
+			
+			if($results){
+				foreach($results as $result){
+					$metas[$result->meta_key] = $result->meta_value;
+				}
+			}			
+		}
+		
+		return $metas;
 	}
 	
 }
