@@ -19,7 +19,21 @@ class UgManagement{
 		
 		//for submissions
 		add_action('init', array(get_class(), 'save_group_info'));
+		
+		//add_action('init', array(get_class(), 'test'));
 	}
+	
+	
+	
+	static function test(){
+		$UgList = self::get_list_table();
+		$groups = $UgList->populate_table_data();
+		
+		var_dump($groups); exit;
+	}
+	
+	
+	
 	
 		
 	// manages admin menu
@@ -49,14 +63,42 @@ class UgManagement{
 		
 		$UgList = self::get_list_table();
 		
+		if($UgList->current_action() == 'delete'){
+			$group_ids = $_REQUEST['group_id'];
+			
+			if(!is_array($group_ids)){
+				$group_ids = array($group_ids);
+			}			
+			
+			$message = count($group_ids) . ' deleted';
+			
+			
+			self::handle_actions($group_ids);
+		}
+		
 		include USERGROUPMANAGMENT_DIR . '/includes/groups.php';
+	}
+	
+	
+	/*
+	 * handle actions
+	 * */
+	static function handle_actions($group_ids){
+		$Ugdb = new UgDbManagement();
+		
+		if(is_array($group_ids)){
+			foreach($group_ids as $group_id){
+				$Ugdb->delete_group($group_id);
+			}
+		}
+		//var_dump($group_ids);
 	}
 	
 	
 	//get a list table
 	static function get_list_table(){
 		if(!class_exists('UgListTable')){
-			include USERGROUPMANAGMENT_DIR . 'classes/list-table.php';
+			include USERGROUPMANAGMENT_DIR . '/classes/list-table.php';
 		}
 		
 		$UgList = new UgListTable();

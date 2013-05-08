@@ -97,8 +97,11 @@ class UgDbManagement{
 		return $info;
 	}
 	
-	function get_group_meta(){
-		
+	function get_group_meta($group_id, $meta_key){
+		global $wpdb;
+		if($group_id){
+			return $wpdb->get_var("select meta_value from $this->group_meta where group_id = '$group_id' and meta_key = '$meta_key'");
+		}
 	}
 	
 	function get_group_metas($group_id){
@@ -118,4 +121,33 @@ class UgDbManagement{
 		return $metas;
 	}
 	
+	
+	//wrapper of get_results
+	function get_results($sql, $table=0){
+		global $wpdb;
+				
+		return $wpdb->get_results($sql);
+	}
+	
+	
+	function get_var($sql, $table = 0){
+		global $wpdb;
+			
+		return $wpdb->get_var($sql);
+	}
+	
+	
+	/*
+	 * delete a goup
+	 * */
+	function delete_group($ID){
+		global $wpdb;
+		$sql = array();
+		$sql[] = "delete from $this->group where ID = '$ID'";
+		$sql[] = "delete from $this->group_meta where group_id = '$ID'";
+		
+		foreach ($sql as $s) {
+			$wpdb->query($s);
+		}
+	}
 }

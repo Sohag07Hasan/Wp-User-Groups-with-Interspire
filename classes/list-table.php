@@ -15,9 +15,9 @@ if( ! class_exists( 'WP_List_Table' ) ) {
 class UgListTable extends  WP_List_Table{
 	
 	
-	private $per_page = 0;
-	private $total_items = 0;
-	private $current_page = 0;
+	private $per_page;
+	private $total_items;
+	private $current_page;
 	
 	/*columns of the talbe*/
 	function get_columns(){
@@ -54,7 +54,7 @@ class UgListTable extends  WP_List_Table{
 	function get_sortable_columns(){
 		$sortable_columns = array(
 			'name' => array('name', false),
-			'domain' => array('email', false)
+			'domain' => array('domain', false)
 		);
 		
 		return $sortable_columns;
@@ -66,10 +66,12 @@ class UgListTable extends  WP_List_Table{
 	 * total items
 	 * */
 	private function _set_pagination_parameters(){
-		$this->per_page = 30;
+		$Ugdb = new UgDbManagement();
+		
 		$this->current_page = $this->get_pagenum();
 
-		$this->total_items = 100;
+		$this->total_items = $Ugdb->get_var("select count(ID) from $Ugdb->group");
+		$this->per_page = 30;
 		
 		$this->set_pagination_args( array(
             'total_items' => $this->total_items,                  //WE have to calculate the total number of items
@@ -85,15 +87,15 @@ class UgListTable extends  WP_List_Table{
 	 * Table population
 	 * */
 	function populate_table_data(){
-		global $wpdb;
-		$tables = Athlatics_Board_Admin::get_tables();
-		extract($tables);
 		
-		$sql = "SELECT * FROM $user";
+		//$this->per_page = 50;
+		$Ugdb = new UgDbManagement();
+		
+		$sql = "SELECT * FROM $Ugdb->group";
 		
 		if(isset($_REQUEST['s']) && !empty($_REQUEST['s'])){
 			$s = trim($_REQUEST['s']);
-			$sql .= " WHERE name LIKE '%$s%' OR email LIKE '%$s%'";
+			$sql .= " WHERE name LIKE '%$s%' OR domain LIKE '%$s%'";
 		}	
 		
 		//sorting elements
@@ -109,19 +111,18 @@ class UgListTable extends  WP_List_Table{
 		
 		$sql .= " LIMIT $this->per_page OFFSET $offset";
 			
-		
-		$athlates = $wpdb->get_results($sql);
-		
+		$groups = $Ugdb->get_results($sql, 1);
+				
 		$data = array();
-		if($athlates){
-			foreach($athlates as $athlate){
-				$info = $this->get_athlete_logs($athlate->id);
+		if($groups){
+			foreach($groups as $group){				
+				//$metas = $Ugdb->get_group_metas($group->ID);
 				$data[] = array(
-					'ID' => $athlate->id,
-					'name' => $athlate->name,
-					'email' => $athlate->email,
-					'wo_count' => $info['count'],
-					'last_seen' => $info['last_seen']
+					'ID' => $group->ID,
+					'name' => $group->name,
+					'domain' => $group->domain,
+					'interspire' => $Ugdb->get_group_meta($group->ID, 'group_interspire_list'),
+					'user_count' => 10
 				);
 			}
 		}
@@ -170,10 +171,11 @@ class UgListTable extends  WP_List_Table{
 	/* default column checking */
 	function column_default($item, $column_name){
 		switch($column_name){
+			case "ID":
 			case "name":				
-			case "email" :
-			case 'wo_count' :
-			case 'last_seen' :
+			case "domain":
+			case "interspire":
+			case "user_count":
 				return $item[$column_name];
 				break;
 			default: 
@@ -183,10 +185,10 @@ class UgListTable extends  WP_List_Table{
 	}
 	
 	
-	/*adding some extra actions links after the first column*/
+	/*adding extra actions when hovering first column  */
 	function column_name($item){
 		
-		$delete_href = sprintf('?page=%s&action=%s&athlete=%s', $_REQUEST['page'],'delete',$item['ID']);
+		$delete_href = sprintf('?page=%s&action=%s&group_id=%s', $_REQUEST['page'],'delete',$item['ID']);
 		
 		if(isset($_REQUEST['s']) && !empty($_REQUEST['s'])){
 			$delete_href = add_query_arg(array('s'=>$_REQUEST['s']), $delete_href);
@@ -197,8 +199,7 @@ class UgListTable extends  WP_List_Table{
 		}
 		
 		$actions = array(
-			'wod' => sprintf('<a href="?page=%s&type=%s&athlete=%s">Wod</a>','athletes-register-add','editlog',$item['ID']),
-			'edit' => sprintf('<a href="?page=%s&action=%s&athlete=%s">Edit</a>','athletes-register-add','edit',$item['ID']),
+			'edit' => sprintf('<a href="?page=%s&action=%s&group_id=%s">Edit</a>','addnew-user-group','edit',$item['ID']),
 			'delete' => "<a href='$delete_href'>Delete</a>"
 		);
 		
@@ -219,7 +220,7 @@ class UgListTable extends  WP_List_Table{
 	/* checkbox for bulk action*/
 	function column_cb($item) {
         return sprintf(
-            '<input type="checkbox" name="athlete[]" value="%s" />', $item['ID']
+            '<input type="checkbox" name="group_id[]" value="%s" />', $item['ID']
         );    
     }
 	  
