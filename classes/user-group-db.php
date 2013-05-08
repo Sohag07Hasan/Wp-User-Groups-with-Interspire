@@ -25,9 +25,11 @@ class UgDbManagement{
 		)";
 		
 		$sql[] = "create table if not exists $this->group_meta(
+			meta_id bigint not null auto_increment,
 			group_id bigint not null,
 			meta_key text not null,
-			meta_value text not null
+			meta_value text not null,
+			primary key(meta_id)	
 		)";
 				
 		
@@ -35,6 +37,13 @@ class UgDbManagement{
 			$wpdb->query($s);
 		}
 		
+	}
+	
+	
+	function drop_tables(){
+		global $wpdb;
+		$wpdb->query("drop table $this->group");
+		$wpdb->query("drop table $this->group_meta");
 	}
 	
 	
@@ -66,15 +75,20 @@ class UgDbManagement{
 	
 	function update_group_meta($group_id, $meta_key, $meta_value){
 		global $wpdb;
-		$is_exist = $wpdb->get_var("select group_id from $this->group_meta where group_id = '$group_id' and meta_key = '$meta_key'");
+		
+		$is_exist = $wpdb->get_var("select meta_id from $this->group_meta where group_id = '$group_id' and meta_key = '$meta_key'");
+		
+		
 		
 		if($is_exist){
-			$wpdb->update($this->group_meta, array('meta_key'=>$meta_key, 'meta_value'=>$meta_value), array('group_id'=>$group_id), array('%s', '%s'), array('%d'));	
+			return $wpdb->update($this->group_meta, array('meta_value'=>$meta_value), array('group_id'=>$group_id, 'meta_key'=>$meta_key), array('%s'), array('%d', '%s'));	
 		}
 		else{
-			$wpdb->insert($this->group_meta, array('group_id'=>$group_id, 'meta_key'=>$meta_key, 'meta_value'=>$meta_value), array('%d', '%s', '%s'));
+			return $wpdb->insert($this->group_meta, array('group_id'=>$group_id, 'meta_key'=>$meta_key, 'meta_value'=>$meta_value), array('%d', '%s', '%s'));
 		}
-			
+		
+				
+		
 	}
 		
 	

@@ -15,6 +15,7 @@ class UgManagement{
 		//admin menu
 		add_action('admin_menu', array(get_class(), 'admin_menu'));		
 		register_activation_hook(USERGROUPMANAGMENT_FILE, array(get_class(), 'manage_db'));
+		register_deactivation_hook(USERGROUPMANAGMENT_FILE, array(get_class(), 'deactivated_plugin'));
 
 		
 		//for submissions
@@ -115,7 +116,8 @@ class UgManagement{
 	//function to hanel group info
 	static function _save(){
 		$Ugdb = new UgDbManagement();
-		$group_id = 0;		
+		$group_id = 0;
+				
 		if(isset($_POST['group_id'])) $group_id = $_POST['group_id'];
 		
 		$info = array(
@@ -126,8 +128,9 @@ class UgManagement{
 		$group_id = $Ugdb->update_group($group_id, $info);
 
 		if($group_id > 0){
-			$Ugdb->update_group_meta($group_id, 'password', trim($_POST['group_password']));
 			$Ugdb->update_group_meta($group_id, 'group_interspire_list', trim($_POST['group_interspire_list']));
+			$Ugdb->update_group_meta($group_id, 'group_password', trim($_POST['group_password']));
+			
 		}
 		
 		if($group_id > 0){
@@ -144,6 +147,11 @@ class UgManagement{
 	static function manage_db(){
 		$Ugdb = new UgDbManagement();
 		return $Ugdb->manage_db();
+	}
+	
+	static function deactivated_plugin(){
+		$Ugdb = new UgDbManagement();
+		return $Ugdb->drop_tables();
 	}
 	
 	

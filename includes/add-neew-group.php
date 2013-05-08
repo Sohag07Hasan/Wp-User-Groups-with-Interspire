@@ -58,7 +58,7 @@
 				</tr>
 				<tr>
 					<th scope="row"><label for="group_password">Group Password </label></th>
-					<td><input size="40" type="text" id="group_password" name="group_password" value="<?php echo $metas['password']; ?>" /></td>
+					<td><input size="40" type="text" id="group_password" name="group_password" value="<?php echo $metas['group_password']; ?>" /></td>
 				</tr>
 				
 				<tr>
@@ -66,7 +66,9 @@
 					<td>
 						<select id="group-interspire_list" class="group-selectbox" name="group_interspire_list">
 							<option value="">Choose</option>
-							<option value="">List B</option>
+							<option <?php selected(2, $metas['group_interspire_list']); ?> value="2">List A</option>
+							<option <?php selected(3, $metas['group_interspire_list']); ?> value="3">List B</option>
+							<option <?php selected(4, $metas['group_interspire_list']); ?> value="4">List C</option>
 						</select>
 					</td>
 				</tr>
