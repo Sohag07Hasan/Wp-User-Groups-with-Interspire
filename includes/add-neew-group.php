@@ -1,6 +1,6 @@
 <?php 
 	$action = admin_url('admin.php?page=addnew-user-group');
-	$Ugdb = new UgDbManagement();
+	
 	
 	if($_REQUEST['group_id'] > 0){
 		$group = $Ugdb->get_group($_REQUEST['group_id']);
@@ -29,6 +29,18 @@
 		if($_REQUEST['message'] == 1){
 			?>
 			<div class="updated"><p> Group Information saved </p></div>
+			<?php 
+		}
+		
+		if($_REQUEST['message'] == 2){
+			/*
+			$group['name'] = $_REQUEST['group_name'];
+			$group['domain'] = $_REQUEST['group_domain'];
+			$metas['group_password'] = $_REQUEST['group_password'];
+			$metas['group_interspire_list'] = $_REQUEST['group_interspire_list'];
+			*/
+			?>
+			<div class="error"><p> Group Information (Role) is alreay exists </p></div>
 			<?php 
 		}
 	?>

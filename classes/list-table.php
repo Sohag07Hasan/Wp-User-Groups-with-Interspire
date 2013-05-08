@@ -131,43 +131,6 @@ class UgListTable extends  WP_List_Table{
 	}
 	
 	
-	/*
-	 * return logs of a certain athlete
-	 * */
-	function get_athlete_logs($id){
-		global $wpdb;
-		$tables = Athlatics_Board_Admin::get_tables();
-		extract($tables);
-		
-		$results = $wpdb->get_results("SELECT time, log FROM $user_meta WHERE user_id = '$id' ORDER BY time DESC");
-		
-		if($results){
-			$count = 0;
-			$last_seen = array();
-			foreach($results as $key => $result){
-				$log = unserialize($result->log);
-				if($key == 0){
-					$last_seen = Athlates_whiteboard_ajax_handling::get_interval(current_time('timestamp'), strtotime($result->time));
-				}
-				if(is_array($log)){
-					$count += count($log);
-				}
-			}
-			
-			return array(
-				'last_seen' => $last_seen,
-				'count' => $count
-			);
-		}
-		
-		return array(
-			'last_seen' => 'N/A',
-			'count' => 0
-		);
-	}
-	
-	
-	
 	/* default column checking */
 	function column_default($item, $column_name){
 		switch($column_name){
@@ -200,6 +163,7 @@ class UgListTable extends  WP_List_Table{
 		
 		$actions = array(
 			'edit' => sprintf('<a href="?page=%s&action=%s&group_id=%s">Edit</a>','addnew-user-group','edit',$item['ID']),
+			'csv' => sprintf('<a href="?page=%s&csv=%s&group_id=%s">Csv Import</a>','addnew-user-group','csv',$item['ID']),
 			'delete' => "<a href='$delete_href'>Delete</a>"
 		);
 		

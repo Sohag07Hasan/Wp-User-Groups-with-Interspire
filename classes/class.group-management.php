@@ -41,6 +41,8 @@ class UgManagement{
 	static function admin_menu(){
 		add_menu_page('user group management', 'User Groups', 'manage_options', 'user-group-management', array(get_class(), 'menu_group_management'), '', 68);
 		add_submenu_page('user-group-management', 'new or edit user group', 'Add New', 'manage_options', 'addnew-user-group', array(get_class(), 'submenu_add_usergourp'));
+		add_submenu_page('user-group-management', 'inter sipre default options', 'InterSpire', 'manage_options', 'interspire-default-options', array(get_class(), 'submenu_interspire'));
+		add_submenu_page('user-group-management', 'inter sipre default options', 'Site Settings', 'manage_options', 'registration-default-options', array(get_class(), 'submenu_registration_options'));
 	}
 	
 	
@@ -108,8 +110,16 @@ class UgManagement{
 	
 	
 	//sub menu page to add or edit an user group
-	static function submenu_add_usergourp(){		
-		include USERGROUPMANAGMENT_DIR . '/includes/add-neew-group.php';
+	static function submenu_add_usergourp(){
+		$Ugdb = new UgDbManagement();
+		
+		if($_REQUEST['csv'] == 'csv'){
+						
+			include USERGROUPMANAGMENT_DIR . '/includes/csv-import-form.php';
+		}
+		else{
+			include USERGROUPMANAGMENT_DIR . '/includes/add-neew-group.php';
+		}
 	}
 	
 	
@@ -125,21 +135,49 @@ class UgManagement{
 			'domain' => trim($_POST['group_domain']) 
 		);
 		
-		$group_id = $Ugdb->update_group($group_id, $info);
-
-		if($group_id > 0){
-			$Ugdb->update_group_meta($group_id, 'group_interspire_list', trim($_POST['group_interspire_list']));
-			$Ugdb->update_group_meta($group_id, 'group_password', trim($_POST['group_password']));
-			
-		}
+		$role = self::_add_role($info);
 		
-		if($group_id > 0){
-			return array(
-				'group_id' => $group_id,
-				'message' => 1
+		if($role || $group_id > 0){
+			$group_id = $Ugdb->update_group($group_id, $info);
+	
+			if($group_id > 0){
+				$Ugdb->update_group_meta($group_id, 'group_interspire_list', trim($_POST['group_interspire_list']));
+				$Ugdb->update_group_meta($group_id, 'group_password', trim($_POST['group_password']));
 				
+			}
+			
+			if($group_id > 0){
+				return array(
+					'group_id' => $group_id,
+					'message' => 1
+					
+				);
+			}
+		}
+		else{
+			return array(
+				'message' => 2				
 			);
 		}
+		
+	}
+	
+	
+	/*
+	 * save the group name as a role
+	 * */
+	static function _add_role($info){
+		$role_name = strip_tags($info['name']);
+		
+		$role_id = preg_replace('/[^A-Za-z0-9]/', '', $role_name);
+		$role_id = strtolower($role_id);
+		$cap = array(
+			'read' => true
+		);
+		
+		$created_role = add_role($role_id, $role_name, $cap);
+		
+		return $created_role;
 	}
 	
 	
@@ -163,5 +201,19 @@ class UgManagement{
 		
 		wp_redirect($url);
 		die();
+	}
+	
+	
+	/*
+	 * submenu for interspire
+	 * */
+	static function submenu_interspire(){
+		
+	}
+	
+	
+	/*submenu page for site default settings*/
+	static function submenu_registration_options(){
+		
 	}
 }
