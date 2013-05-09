@@ -94,4 +94,8 @@
 		
 	</form>
 	
+	<?php if($_REQUEST['group_id'] > 0) : ?>	
+		<p><a href="<?php echo admin_url('admin.php?page=addnew-user-group&csv=csv&group_id='.$_REQUEST['group_id']); ?>"> Import CSV</a></p>
+	<?php endif; ?>
+	
 </div>
