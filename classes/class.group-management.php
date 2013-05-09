@@ -91,6 +91,8 @@ class UgManagement{
 		
 		if(is_array($group_ids)){
 			foreach($group_ids as $group_id){
+				$role = $Ugdb->get_group_meta($group_id, 'role');
+				remove_role($role);
 				$Ugdb->delete_group($group_id);
 			}
 		}
@@ -132,33 +134,60 @@ class UgManagement{
 		
 		$info = array(
 			'name' => trim($_POST['group_name']),
-			'domain' => trim($_POST['group_domain']) 
+			'domain' => trim($_POST['group_domain']),
 		);
 		
-		$role = self::_add_role($info);
 		
-		if($role || $group_id > 0){
-			$group_id = $Ugdb->update_group($group_id, $info);
-	
-			if($group_id > 0){
-				$Ugdb->update_group_meta($group_id, 'group_interspire_list', trim($_POST['group_interspire_list']));
-				$Ugdb->update_group_meta($group_id, 'group_password', trim($_POST['group_password']));
-				
-			}
+		
+		if(empty($info['name'])) return false;
+		
+		$cap = array('read' => true);
+		
+		if($group_id > 0){
+			$existing_role = $_POST['group_role'];
+			remove_role($existing_role);
 			
-			if($group_id > 0){
-				return array(
-					'group_id' => $group_id,
-					'message' => 1
-					
-				);
+			if(strlen($existing_role) > 0){
+				$created_role = add_role($existing_role, $_POST['group_name'], $cap);
+			}
+			else{
+				$role_name = strip_tags($_POST['group_name']);		
+				$role_id = preg_replace('/[^A-Za-z0-9]/', '', $role_name);
+				$role_id = strtolower($role_id);
+				$created_role = add_role($role_id, $role_name, $cap);
 			}
 		}
 		else{
+			$role_name = strip_tags($_POST['group_name']);		
+			$role_id = preg_replace('/[^A-Za-z0-9]/', '', $role_name);
+			$role_id = strtolower($role_id);
+			$created_role = add_role($role_id, $role_name, $cap);
+		}
+
+		if(!$created_role){
 			return array(
 				'message' => 2				
 			);
+		}		
+				
+		
+		$group_id = $Ugdb->update_group($group_id, $info);
+
+		if($group_id > 0){
+			$Ugdb->update_group_meta($group_id, 'group_interspire_list', trim($_POST['group_interspire_list']));
+			$Ugdb->update_group_meta($group_id, 'group_password', trim($_POST['group_password']));
+			$Ugdb->update_group_meta($group_id, 'role', $created_role->name);
+			
 		}
+		
+		if($group_id > 0){
+			return array(
+				'group_id' => $group_id,
+				'message' => 1
+				
+			);
+		}
+			
 		
 	}
 	
@@ -167,15 +196,22 @@ class UgManagement{
 	 * save the group name as a role
 	 * */
 	static function _add_role($info){
-		$role_name = strip_tags($info['name']);
-		
-		$role_id = preg_replace('/[^A-Za-z0-9]/', '', $role_name);
-		$role_id = strtolower($role_id);
 		$cap = array(
 			'read' => true
 		);
 		
-		$created_role = add_role($role_id, $role_name, $cap);
+		if(strlen($info['role']) > 0){
+			remove_role($info['role']);
+			$created_role = add_role($info['role'], strip_tags($info['name']), $cap);
+		}
+		else{
+		
+			$role_name = strip_tags($info['name']);		
+			$role_id = preg_replace('/[^A-Za-z0-9]/', '', $role_name);
+			$role_id = strtolower($role_id);
+			$created_role = add_role($role_id, $role_name, $cap);
+		}
+		
 		
 		return $created_role;
 	}

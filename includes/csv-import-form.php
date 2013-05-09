@@ -1,18 +1,16 @@
 <?php
 	if($_REQUEST['group_id'] > 0){
-		
 		$group = $Ugdb->get_group($_REQUEST['group_id']);
-		
-		if($group){
-			$metas = $Ugdb->get_group_metas($_REQUEST['group_id']);
-		}
-			
+				
 	}
 ?>
 
 <div class="wrap">
 
 	<h2> Import Users </h2>
+	
+	<p>Group Name: <?php echo $group['name']; ?></p>
+	<p>Group Domain: <?php echo $group['domain']; ?> </p>
 	
 	<form acton="" method="post" enctype="multipart/form-data">
 		

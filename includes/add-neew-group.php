@@ -33,12 +33,7 @@
 		}
 		
 		if($_REQUEST['message'] == 2){
-			/*
-			$group['name'] = $_REQUEST['group_name'];
-			$group['domain'] = $_REQUEST['group_domain'];
-			$metas['group_password'] = $_REQUEST['group_password'];
-			$metas['group_interspire_list'] = $_REQUEST['group_interspire_list'];
-			*/
+			
 			?>
 			<div class="error"><p> Group Information (Role) is alreay exists </p></div>
 			<?php 
@@ -54,6 +49,7 @@
 			if($_REQUEST['group_id'] > 0){
 				?>
 				<input type="hidden" name="group_id" value="<?php echo trim($_REQUEST['group_id']); ?>" />
+				<input type="hidden" name="group_role" value="<?php echo $metas['role']; ?>" />
 				<?php 
 			}
 		?>
