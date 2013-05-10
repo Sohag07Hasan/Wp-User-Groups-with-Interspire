@@ -342,20 +342,39 @@ class UgManagement{
     	
     	$group = $Ugdb->get_group($_POST['group_id']);
 		$group_meta = $Ugdb->get_group_metas($group->ID);
+		
     	if(strlen($group[domain]) > 0){
     		if(self::is_matched($group->domain, $info[0])){
     			$user = get_user_by( 'email', $info[0] );
     			
     			if($user){
     				$user->set_role($group_meta['role']);
+    				update_user_meta($user->ID, 'gm_group_id', $group['ID']);
+    				update_user_meta($user->ID, 'interspire_list', $group_meta['group_interspire_list']);
+    				
+    				return true;
     			}
     			else{
     				$user_id = wp_insert_user(array(
-    					''
+    					'user_login' => $info[0],
+    					'user_nicename' => $info[2],
+    					'user_email' => $info[0],
+    					'display_name' =>$info[1],
+    					'user_pass' => $group_meta['group_password'],
+    					'role' => $group_meta['role']
     				));
+    				
+    				if($user_id){
+    					update_user_meta($user_id, 'gm_group_id', $group['ID']);
+    					update_user_meta($user_id, 'interspire_list', $group_meta['group_interspire_list']);
+    					
+    					return true;
+    				}
     			}
     		}
     	}
+    	
+    	return false;
     	    	
     }
     
