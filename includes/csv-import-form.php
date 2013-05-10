@@ -56,9 +56,9 @@
 		        	 $exec_time = microtime(true) - $time_start;
 		        	 
 		        	 $message['updated'][] = 'Total user added: ' . $imported;
-		        	 $message['updated'][] = 'Total user skipped due to unmatched error: ' . $skipped;
+		        	 $message['updated'][] = 'Total user skipped due to domain unmatched error: ' . $skipped;
 		        	 $message['updated'][] = 'Total user aborted due to wrong email: ' . $aborted;
-		        	 $message['updated'][] = sprintf('Total time required: %.2f seconds' . $exec_time);
+		        	 $message['updated'][] = sprintf('Total time required: %.2f seconds' , $exec_time);
 		        	 
 		        }
 			}

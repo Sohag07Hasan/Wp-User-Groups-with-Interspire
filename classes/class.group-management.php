@@ -341,11 +341,13 @@ class UgManagement{
     	$Ugdb = new UgDbManagement();
     	
     	$group = $Ugdb->get_group($_POST['group_id']);
-		$group_meta = $Ugdb->get_group_metas($group->ID);
+		$group_meta = $Ugdb->get_group_metas($group[ID]);
 		
     	if(strlen($group[domain]) > 0){
-    		if(self::is_matched($group->domain, $info[0])){
+    		if(self::is_matched($group['domain'], $info[0])){
     			$user = get_user_by( 'email', $info[0] );
+    			
+    		//	var_dump($group_meta); die();
     			
     			if($user){
     				$user->set_role($group_meta['role']);
@@ -357,7 +359,9 @@ class UgManagement{
     			else{
     				$user_id = wp_insert_user(array(
     					'user_login' => $info[0],
+    					'first_name' => $info[1],
     					'user_nicename' => $info[2],
+    					'nickname' => $info[2],
     					'user_email' => $info[0],
     					'display_name' =>$info[1],
     					'user_pass' => $group_meta['group_password'],
@@ -381,7 +385,11 @@ class UgManagement{
     
     //if the domain is matched
     static function is_matched($domain, $email){
-    	$em = explode('@', $email);    	
+    	$em = explode('@', $email);
+
+    	//var_dump($em);
+    	//var_dump($domain);
+    	
     	return ($em[count($em) - 1] == $domain) ? true : false;
     }
     
