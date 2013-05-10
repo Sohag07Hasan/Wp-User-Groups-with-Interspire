@@ -19,6 +19,8 @@ class UgListTable extends  WP_List_Table{
 	private $total_items;
 	private $current_page;
 	
+	private $sync_lists = array();
+	
 	/*columns of the talbe*/
 	function get_columns(){
 		$columns = array(
@@ -44,10 +46,29 @@ class UgListTable extends  WP_List_Table{
 		
 		//paginations
 		$this->_set_pagination_parameters();
+		
+		$this->set_sync_lists();
 				
 		$this->items = $this->populate_table_data();
 				
 	}
+	
+	
+	/*
+	 * sync lists
+	 * */
+	function set_sync_lists(){
+		$lists = UgManagement::get_interspire_lists();
+		
+		//var_dump($lists); die();
+		
+		if($lists){
+			foreach($lists as $list){
+				$this->sync_lists[$list['listid']] = $list['name'];
+			}
+		}
+	}
+	
 	
 	
 	//make some column sortable
@@ -117,11 +138,15 @@ class UgListTable extends  WP_List_Table{
 		if($groups){
 			foreach($groups as $group){				
 				//$metas = $Ugdb->get_group_metas($group->ID);
+				
+				$list_id = $Ugdb->get_group_meta($group->ID, 'group_interspire_list');
+				$list_name = (isset($this->sync_lists[$list_id])) ? $this->sync_lists[$list_id] : 'N/A';
+				
 				$data[] = array(
 					'ID' => $group->ID,
 					'name' => $group->name,
 					'domain' => $group->domain,
-					'interspire' => $Ugdb->get_group_meta($group->ID, 'group_interspire_list'),
+					'interspire' => $list_id . " ( $list_name ) ",
 					'user_count' => 10
 				);
 			}

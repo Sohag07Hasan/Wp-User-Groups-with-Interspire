@@ -22,19 +22,41 @@ class UgManagement{
 		add_action('init', array(get_class(), 'save_group_info'));
 		
 		//add_action('init', array(get_class(), 'test'));
+		
+		
+		//prevent password reset
+		add_filter('allow_password_reset', array(get_class(), 'prevent_password_reset'), 10, 2);
+					
 	}
+	
+	
 	
 	
 	
 	static function test(){
-		$UgList = self::get_list_table();
-		$groups = $UgList->populate_table_data();
+		$sync = self::get_synchronizer();
+		$lists = $sync->get_lists();
 		
-		var_dump($groups); exit;
+		var_dump($lists);
+		exit;
+	}
+	
+	static function get_synchronizer(){
+		if(!class_exists('InterSpireSync')){
+			include USERGROUPMANAGMENT_DIR . '/classes/class.interspire.php';
+		}
+		
+		$sync = new InterSpireSync(self::get_interspire_credentials());
+		return $sync;
 	}
 	
 	
-	
+	//get the interspire lists
+	static function get_interspire_lists(){
+		$sync = self::get_synchronizer();
+		$lists = $sync->get_lists();
+		return $lists;
+	}
 	
 		
 	// manages admin menu
@@ -219,9 +241,24 @@ class UgManagement{
 	
 	//activate the plguin and create tables
 	static function manage_db(){
+		
+		self::activate_plugin();
+		
 		$Ugdb = new UgDbManagement();
 		return $Ugdb->manage_db();
 	}
+	
+	//activate the plugin and set the default options
+	static function activate_plugin(){
+		$options = array(
+			'restrict-password-reset' => 1,
+			'restrict-registration'  => 0,
+			'default-interspire-list' => 0
+		);
+		
+		return update_option('default_site_options', $options);
+	}
+	
 	
 	static function deactivated_plugin(){
 		$Ugdb = new UgDbManagement();
@@ -244,13 +281,13 @@ class UgManagement{
 	 * submenu for interspire
 	 * */
 	static function submenu_interspire(){
-		
+		include USERGROUPMANAGMENT_DIR . '/includes/interspire-credential-form.php';
 	}
 	
 	
 	/*submenu page for site default settings*/
 	static function submenu_registration_options(){
-		
+		include USERGROUPMANAGMENT_DIR . '/includes/default-site-options.php';
 	}
 	
 	
@@ -314,7 +351,7 @@ class UgManagement{
     			}
     			else{
     				$user_id = wp_insert_user(array(
-    					
+    					''
     				));
     			}
     		}
@@ -328,5 +365,21 @@ class UgManagement{
     	$em = explode('@', $email);    	
     	return ($em[count($em) - 1] == $domain) ? true : false;
     }
-	
+    
+    
+    //prevent password reset
+    static function prevent_password_reset($allow, $user_id){
+    	return false;
+    }
+    
+    
+    //get the interspire credentials
+    static function get_interspire_credentials(){
+    	return get_option('interspire_credentials');
+    }
+   
+   	//get default site settings
+	static function get_site_default_options(){
+		return get_option('default_site_options');
+	}
 }

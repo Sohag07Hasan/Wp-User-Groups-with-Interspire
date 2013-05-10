@@ -12,6 +12,8 @@
 		//var_dump($group);
 		//var_dump($metas);
 	}
+	
+	$lists = self::get_interspire_lists();
 ?>
 
 
@@ -74,9 +76,15 @@
 					<td>
 						<select id="group-interspire_list" class="group-selectbox" name="group_interspire_list">
 							<option value="">Choose</option>
-							<option <?php selected(2, $metas['group_interspire_list']); ?> value="2">List A</option>
-							<option <?php selected(3, $metas['group_interspire_list']); ?> value="3">List B</option>
-							<option <?php selected(4, $metas['group_interspire_list']); ?> value="4">List C</option>
+							<?php 
+								if(count($lists) > 0){
+									foreach($lists as $list){
+										?>
+										<option <?php selected($list['listid'], $metas['group_interspire_list']); ?> value="<?php echo $list['listid']; ?>"><?php echo $list['name']; ?></option>
+										<?php 
+									}
+								}							
+							?>							
 						</select>
 					</td>
 				</tr>
