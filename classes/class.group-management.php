@@ -15,7 +15,7 @@ class UgManagement{
 		//admin menu
 		add_action('admin_menu', array(get_class(), 'admin_menu'));		
 		register_activation_hook(USERGROUPMANAGMENT_FILE, array(get_class(), 'manage_db'));
-		register_deactivation_hook(USERGROUPMANAGMENT_FILE, array(get_class(), 'deactivated_plugin'));
+	//	register_deactivation_hook(USERGROUPMANAGMENT_FILE, array(get_class(), 'deactivated_plugin'));
 
 		
 		//for submissions
