@@ -1,4 +1,7 @@
 <?php
+
+	set_time_limit(0);
+
 	if($_REQUEST['group_id'] > 0){
 		$group = $Ugdb->get_group($_REQUEST['group_id']);				
 	}
@@ -7,12 +10,61 @@
 	
 	//form is submitted
 	if($_POST['csv-uploader'] == 'Y'){
+		
+		$time_start = microtime(true);
+		
 		if(empty($_FILES['group_csv']['tmp_name'])){
 			$message['error'][] = "No file is uploaded";
 		}
 		else{
+			$file = $_FILES['group_csv']['tmp_name'];
+			$info = pathinfo($_FILES['group_csv']['name']);
 			
-		}			
+			if($info['extension'] == 'csv'){
+				self::stripBOM($file);
+				
+				$csv = self::_csv_uploader();
+				
+				if (!$csv->load($file)) {
+		            $message['error'][][] = 'Failed to load file, aborting.';
+		                      
+		        }
+		        else{
+		        	$aborted = 0;
+		        	$skipped = 0;
+	        		$imported = 0;
+		        	$csv->symmetrize();
+
+		        	var_dump($csv->getHeaders());
+		        	
+		        	foreach ($csv->getRawArray() as $num => $csv_data) {
+		        		if($num == 0) continue;
+
+		        		if(!is_email($csv_data[0])){
+		        			$aborted ++;
+		        			continue;
+		        		}
+		        		
+		        		if(self::create_user($csv_data)){
+		        			$imported ++;
+		        		}
+		        		else{
+		        			$skipped ++;
+		        		}
+		        	}
+		        	
+		        	
+		        	 $exec_time = microtime(true) - $time_start;
+		        }
+			}
+
+			else{
+				$message['error'][] = "The uploaded file is not a csv file";
+			}
+			
+		}
+
+		
 	}
 	
 	

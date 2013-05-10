@@ -252,4 +252,81 @@ class UgManagement{
 	static function submenu_registration_options(){
 		
 	}
+	
+	
+	
+	/*
+	 * csv uploader object
+	 * */
+	static function _csv_uploader(){
+		if(!class_exists('File_CSV_DataSource')){
+			include USERGROUPMANAGMENT_DIR . '/classes/class.csv-parser.php';
+		}
+		
+		$csv = new File_CSV_DataSource();
+		return $csv;
+	}
+	
+	
+	// delete BOM from UTF-8 file
+    function stripBOM($fname) {
+        $res = fopen($fname, 'rb');
+        if (false !== $res) {
+            $bytes = fread($res, 3);
+            if ($bytes == pack('CCC', 0xef, 0xbb, 0xbf)) {
+                $this->log['notice'][] = 'Getting rid of byte order mark...';
+                fclose($res);
+
+                $contents = file_get_contents($fname);
+                if (false === $contents) {
+                    trigger_error('Failed to get file contents.', E_USER_WARNING);
+                }
+                $contents = substr($contents, 3);
+                $success = file_put_contents($fname, $contents);
+                if (false === $success) {
+                    trigger_error('Failed to put file contents.', E_USER_WARNING);
+                }
+            } else {
+                fclose($res);
+            }
+        } else {
+            $this->log['error'][] = 'Failed to open file, aborting.';
+        }
+    }
+	
+    
+    
+    /*
+     * create a new user if not exists
+     * */
+    static function create_user($info){
+    	global $wpdb;
+    	$Ugdb = new UgDbManagement();
+    	
+    	$group = $Ugdb->get_group($_POST['group_id']);
+		$group_meta = $Ugdb->get_group_metas($group->ID);
+    	if(strlen($group[domain]) > 0){
+    		if(self::is_matched($group->domain, $info[0])){
+    			$user = get_user_by( 'email', $info[0] );
+    			
+    			if($user){
+    				$user->set_role($group_meta['role']);
+    			}
+    			else{
+    				$user_id = wp_insert_user(array(
+    					
+    				));
+    			}
+    		}
+    	}
+    	    	
+    }
+    
+    
+    //if the domain is matched
+    static function is_matched($domain, $email){
+    	$em = explode('@', $email);    	
+    	return ($em[count($em) - 1] == $domain) ? true : false;
+    }
+	
 }
