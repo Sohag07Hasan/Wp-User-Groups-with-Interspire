@@ -9,6 +9,8 @@ class UgManagement{
 	//custom posttype management
 	const posttype = 'usergroup';
 	
+	static $registered_user = array();
+	
 	
 	static function init(){
 			
@@ -26,6 +28,18 @@ class UgManagement{
 		
 		//prevent password reset
 		add_filter('allow_password_reset', array(get_class(), 'prevent_password_reset'), 10, 2);
+		
+		//disalbe the password option from profile page
+		add_filter('show_password_fields', array(get_class(), 'show_password_fields'), 10, 2);
+		
+		
+		//authentication user by group password
+		remove_filter('authenticate', 'wp_authenticate_username_password', 20);
+		add_filter('authenticate', array(get_class(), 'wp_authenticate_username_password'), 1, 3);
+		
+		
+		//filter registraion procedur with existing groups
+		add_filter('registration_errors', array(get_class(), 'registration_errors'), 10, 3);
 					
 	}
 	
@@ -377,10 +391,47 @@ class UgManagement{
     			}
     		}
     	}
+    	else{
+    		
+    			$user = get_user_by( 'email', $info[0] );
+    			
+    		//	var_dump($group_meta); die();
+    			
+    			if($user){
+    				$user->set_role($group_meta['role']);
+    				update_user_meta($user->ID, 'gm_group_id', $group['ID']);
+    				update_user_meta($user->ID, 'interspire_list', $group_meta['group_interspire_list']);
+    				
+    				return true;
+    			}
+    			else{
+    				$user_id = wp_insert_user(array(
+    					'user_login' => $info[0],
+    					'first_name' => $info[1],
+    					'user_nicename' => $info[2],
+    					'nickname' => $info[2],
+    					'user_email' => $info[0],
+    					'display_name' =>$info[1],
+    					'user_pass' => $group_meta['group_password'],
+    					'role' => $group_meta['role']
+    				));
+    				
+    				if($user_id){
+    					update_user_meta($user_id, 'gm_group_id', $group['ID']);
+    					update_user_meta($user_id, 'interspire_list', $group_meta['group_interspire_list']);
+    					
+    					return true;
+    				}
+    			}
+    		}
+    		
+    	
     	
     	return false;
     	    	
     }
+    
+      
     
     
     //if the domain is matched
@@ -396,8 +447,159 @@ class UgManagement{
     
     //prevent password reset
     static function prevent_password_reset($allow, $user_id){
-    	return false;
+		if(self::is_a_group_memeber($user_id)){
+			$allow = false;
+		}
+
+		return $allow;
     }
+
+    
+    //prevent the password editing option
+    static function show_password_fields($allow, $userdata){
+    	
+    	//skip for the admin
+    	if(current_user_can('manage_options')) return $allow;
+
+   		if(self::is_a_group_memeber($userdata->ID)){
+			$allow = false;
+		}
+		
+		return $allow;
+    }
+    
+    
+    /*
+     * authentication users by group password
+     * 
+     * */
+	function wp_authenticate_username_password($user, $username, $password) {
+		if ( is_a($user, 'WP_User') ) { return $user; }
+	
+		if ( empty($username) || empty($password) ) {
+			$error = new WP_Error();
+	
+			if ( empty($username) )
+				$error->add('empty_username', __('<strong>ERROR</strong>: The username field is empty.'));
+	
+			if ( empty($password) )
+				$error->add('empty_password', __('<strong>ERROR</strong>: The password field is empty.'));
+	
+			return $error;
+		}
+	
+		$user = get_user_by('login', $username);
+	
+		if ( !$user )
+			return new WP_Error('invalid_username', sprintf(__('<strong>ERROR</strong>: Invalid username. <a href="%s" title="Password Lost and Found">Lost your password</a>?'), wp_lostpassword_url()));
+	
+		if ( is_multisite() ) {
+			// Is user marked as spam?
+			if ( 1 == $user->spam)
+				return new WP_Error('invalid_username', __('<strong>ERROR</strong>: Your account has been marked as a spammer.'));
+	
+			// Is a user's blog marked as spam?
+			if ( !is_super_admin( $user->ID ) && isset($user->primary_blog) ) {
+				$details = get_blog_details( $user->primary_blog );
+				if ( is_object( $details ) && $details->spam == 1 )
+					return new WP_Error('blog_suspended', __('Site Suspended.'));
+			}
+		}
+		
+		
+		
+		//user group management
+		$group_id = self::is_a_group_memeber($user->ID);
+		$Ugdb = new UgDbManagement();
+		$group = $Ugdb->get_group($group_id);
+		
+		
+		if($group){
+			
+			$group_password = $Ugdb->get_group_meta($group_id, 'group_password');
+							
+			if(strlen($group_password) > 1){
+			
+				if($group_password == $password){
+					return $user;
+				}
+				else{
+					return new WP_Error( 'incorrect_password', sprintf( __( '<strong>ERROR</strong>: The password you entered for the group name  <strong>%1$s</strong> is incorrect. Please contact with the site admin' ),
+					$group['name'] ) );
+				}
+			}
+		}
+		
+		
+		
+		$user = apply_filters('wp_authenticate_user', $user, $password);
+		if ( is_wp_error($user) )
+			return $user;
+	
+		if ( !wp_check_password($password, $user->user_pass, $user->ID) )
+			return new WP_Error( 'incorrect_password', sprintf( __( '<strong>ERROR</strong>: The password you entered for the username <strong>%1$s</strong> is incorrect. <a href="%2$s" title="Password Lost and Found">Lost your password</a>?' ),
+			$username, wp_lostpassword_url() ) );
+	
+		return $user;
+	}
+    
+    
+    //controlling registration procedure
+    static function registration_errors($errors, $sanitized_user_login, $user_email){
+    	if(is_email($user_email)){
+    		$em = explode('@', $user_email);
+    		$domain = $em[count($em) - 1];
+    		   		
+    		global $wpdb;
+    		$Ugdb = new UgDbManagement();
+
+    		$group = $Ugdb->get_group_by('domain', $domain);
+    		if($group){
+    			
+    			//filtering password
+    			add_filter('random_password', array(get_class(), 'set_group_password'), 10, 1);
+    			
+    			self::$registered_user['group'] = $group;
+    			self::$registered_user['user'] = array('login'=>$sanitized_user_login, 'email'=>$user_email);
+    		}
+    		else{
+    			$domains = $Ugdb->any_domain_exists();    			    			
+    			if(!empty($domain)){
+    				$errors->add('domain_unavailable', sprintf('This domain <strong>%s</strong> is unavailable. Please choose another one ( <strong>%s</strong> ) ', $domain, $domains));
+    			}
+    		}
+    	}
+    	
+    	return $errors;
+    }
+	
+    
+    
+    //set the group password as default
+    static function set_group_password($password){
+    	
+    	//var_dump(self::$registered_user['group']);
+    	
+    	if(isset(self::$registered_user['group'])){
+    		$Ugdb = new UgDbManagement();
+    		$new_password = $Ugdb->get_group_meta(self::$registered_user['group']['ID'], 'group_password');
+    		
+    		if(strlen($new_password) > 0){
+    			$password = $new_password;
+    		}
+    	}
+    	    	
+    	return $password;
+    }
+	
+	
+    /*
+     * bool if a memeber is a 
+     * */
+    static function is_a_group_memeber($user_id){
+    	return get_user_meta($user_id, 'gm_group_id', true);
+    }
+    
     
     
     //get the interspire credentials

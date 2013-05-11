@@ -18,6 +18,9 @@
 		}
 		else{
 			$file = $_FILES['group_csv']['tmp_name'];
+			
+			//var_dump(file($file)); exit;
+			
 			$info = pathinfo($_FILES['group_csv']['name']);
 			
 			if($info['extension'] == 'csv'){
@@ -38,6 +41,12 @@
 		        	//var_dump($csv->getHeaders());
 		        	
 		        	foreach ($csv->getRawArray() as $num => $csv_data) {
+		        		
+		        		//$csv_data = $csv->connect($csv_data);
+		        		
+		        	//	var_dump($csv_data);
+		        		
+		        		
 		        		if($num == 0) continue;
 
 		        		if(!is_email($csv_data[0])){
@@ -51,6 +60,8 @@
 		        		else{
 		        			$skipped ++;
 		        		}
+		        		
+		        		
 		        	}
 		        			        	
 		        	 $exec_time = microtime(true) - $time_start;

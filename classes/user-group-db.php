@@ -164,4 +164,39 @@ class UgDbManagement{
 			$wpdb->query($s);
 		}
 	}
+	
+	
+	
+	/*
+	 * get group by a field
+	 * */
+	function get_group_by($field, $value){
+		global $wpdb;
+		$group_id = $wpdb->get_var("select ID from $this->group where $field like '$value'");
+		if($group_id){
+			return $this->get_group($group_id);
+		}
+				
+		return false;
+	}
+	
+	
+	/*
+	 * check if there is any domain in database
+	 * */
+	function any_domain_exists(){
+		global $wpdb;
+		$sql = "select domain from $this->group where domain not like '' ";
+		$domains = $wpdb->get_col($sql);
+		
+		$d = null;
+		
+		if($domains){
+			$d = implode(', ', $domains);
+		}
+		
+		return $d;
+		
+	}
+	
 }
