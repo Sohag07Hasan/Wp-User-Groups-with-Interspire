@@ -105,4 +105,44 @@ class InterSpireSync{
 		return sprintf($xml, $this->username, $this->token);
 	}
 	
+	
+	//subscribe to a list
+	function add_subsciber($data){
+		$xml = '<xmlrequest>
+					<username>%s</username>
+					<usertoken>%s</usertoken>
+					<requesttype>subscribers</requesttype>
+					<requestmethod>AddSubscriberToList</requestmethod>
+					<details>	
+						<emailaddress>%s</emailaddress>	
+						<mailinglist>%s</mailinglist>	
+						<format>html</format>
+						<confirmed>yes</confirmed>
+						<customfields>
+							<item>
+								<fieldid>Title</fieldid>
+								<value>%s</value>
+							</item>
+						</customfields>			
+					</details>
+				</xmlrequest>';
+		
+		$xml = sprintf($xml, $this->username, $this->token, $data['email'], $data['interspire_list'], $data['nickname']);
+	
+		$request = $this->authRequest('POST', $this->path, $xml);
+					
+		if(in_array($request['http_code'], array(200, 201))){
+			$xml = @ simplexml_load_string($request['response']);
+			
+			if( (string) $xml->status == 'SUCCESS'){
+				return $xml;
+			}
+			
+		}
+		
+		return false;
+	}
+	
+		
+	
 }

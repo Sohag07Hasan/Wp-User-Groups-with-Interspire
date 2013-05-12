@@ -9,6 +9,8 @@ class UgManagement{
 	//custom posttype management
 	const posttype = 'usergroup';
 	
+	
+	
 	static $registered_user = array();
 	
 	
@@ -16,6 +18,9 @@ class UgManagement{
 			
 		//admin menu
 		add_action('admin_menu', array(get_class(), 'admin_menu'));		
+		
+		
+		
 		register_activation_hook(USERGROUPMANAGMENT_FILE, array(get_class(), 'manage_db'));
 	//	register_deactivation_hook(USERGROUPMANAGMENT_FILE, array(get_class(), 'deactivated_plugin'));
 
@@ -50,8 +55,11 @@ class UgManagement{
 		add_action('login_init', array(get_class(), 'login_init'));
 		
 		//login page error message
-		add_filter('login_message', array(get_class(), 'login_message'), 10, 1);
+		add_filter('login_message', array(get_class(), 'login_message'), 10, 1);		
+		
+		
 	}
+	
 	
 	
 	
@@ -269,7 +277,7 @@ class UgManagement{
 	static function manage_db(){
 		
 		self::activate_plugin();
-		
+			
 		$Ugdb = new UgDbManagement();
 		return $Ugdb->manage_db();
 	}
@@ -285,10 +293,10 @@ class UgManagement{
 		return update_option('default_site_options', $options);
 	}
 	
+		
 	
 	static function deactivated_plugin(){
-		$Ugdb = new UgDbManagement();
-		return $Ugdb->drop_tables();
+		
 	}
 	
 	
@@ -385,7 +393,10 @@ class UgManagement{
     			if($user){
     				$user->set_role($group_meta['role']);
     				update_user_meta($user->ID, 'gm_group_id', $group['ID']);
-    				update_user_meta($user->ID, 'interspire_list', $group_meta['group_interspire_list']);
+    				
+    				if($group_meta['group_interspire_list'] > 0){
+    					update_user_meta($user->ID, 'interspire_list', $group_meta['group_interspire_list']);
+    				}
     				
     				return false;
     			}
@@ -403,7 +414,9 @@ class UgManagement{
     				
     				if($user_id){
     					update_user_meta($user_id, 'gm_group_id', $group['ID']);
-    					update_user_meta($user_id, 'interspire_list', $group_meta['group_interspire_list']);
+    					if($group_meta['group_interspire_list'] > 0){
+    						update_user_meta($user_id, 'interspire_list', $group_meta['group_interspire_list']);
+    					}
     					
     					return true;
     				}
@@ -419,7 +432,9 @@ class UgManagement{
     			if($user){
     				$user->set_role($group_meta['role']);
     				update_user_meta($user->ID, 'gm_group_id', $group['ID']);
-    				update_user_meta($user->ID, 'interspire_list', $group_meta['group_interspire_list']);
+    				if($group_meta['group_interspire_list'] > 0){
+    					update_user_meta($user->ID, 'interspire_list', $group_meta['group_interspire_list']);
+    				}
     				
     				return true;
     			}
@@ -437,7 +452,10 @@ class UgManagement{
     				
     				if($user_id){
     					update_user_meta($user_id, 'gm_group_id', $group['ID']);
-    					update_user_meta($user_id, 'interspire_list', $group_meta['group_interspire_list']);
+    					
+    					if($group_meta['group_interspire_list'] > 0){
+    						update_user_meta($user_id, 'interspire_list', $group_meta['group_interspire_list']);
+    					}
     					
     					return true;
     				}
@@ -654,8 +672,11 @@ class UgManagement{
     		}
 	    
 	    	update_user_meta($user->ID, 'gm_group_id', self::$registered_user['group']['ID']);
-	    	update_user_meta($user->ID, 'interspire_list', $group_meta['group_interspire_list']);
-	    	  	   		    		
+	    	
+	    	if($group_meta['group_interspire_list'] > 0){
+	    		update_user_meta($user->ID, 'interspire_list', $group_meta['group_interspire_list']);
+	    	}
+	    		    	  	   		    		
     	}
     	else{
     		if($user->caps['subscriber'] || in_array('subscriber', $user->roles)){
