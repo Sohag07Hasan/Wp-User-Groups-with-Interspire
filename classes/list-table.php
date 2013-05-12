@@ -147,13 +147,27 @@ class UgListTable extends  WP_List_Table{
 					'name' => $group->name,
 					'domain' => $group->domain,
 					'interspire' => $list_id . " ( $list_name ) ",
-					'user_count' => 10
+					'user_count' => $this->get_total_users($group->ID)
 				);
 			}
 		}
 
 		return $data;
 	}
+	
+	
+	
+	/*
+	 * get total users of a group
+	 * */
+	function get_total_users($group_id){
+		global $wpdb;
+		$sql = "select count(user_id) from $wpdb->usermeta where meta_key like 'gm_group_id' and meta_value like '$group_id'";
+		
+	//	return $sql;
+		return $wpdb->get_var($sql);
+	}
+	
 	
 	
 	/* default column checking */
