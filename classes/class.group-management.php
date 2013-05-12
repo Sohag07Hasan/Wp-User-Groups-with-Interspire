@@ -90,6 +90,7 @@ class UgManagement{
 		add_submenu_page('user-group-management', 'new or edit user group', 'Add New', 'manage_options', 'addnew-user-group', array(get_class(), 'submenu_add_usergourp'));
 		add_submenu_page('user-group-management', 'inter sipre default options', 'InterSpire', 'manage_options', 'interspire-default-options', array(get_class(), 'submenu_interspire'));
 		add_submenu_page('user-group-management', 'inter sipre default options', 'Site Settings', 'manage_options', 'registration-default-options', array(get_class(), 'submenu_registration_options'));
+		add_submenu_page('user-group-management', 'default user bulk import', 'CSV Import', 'manage_options', 'default-csv-user-import', array(get_class(), 'submenu_default_csv_import'));
 	}
 	
 	
@@ -316,6 +317,15 @@ class UgManagement{
 	}
 	
 	
+	/*
+	 * submenu for default registration procedure
+	 * */
+	static function submenu_default_csv_import(){
+		include USERGROUPMANAGMENT_DIR . '/includes/default-csv-import-form.php';
+	}
+	
+	
+	
 	
 	/*
 	 * csv uploader object
@@ -371,15 +381,13 @@ class UgManagement{
     	if(strlen($group[domain]) > 0){
     		if(self::is_matched($group['domain'], $info[0])){
     			$user = get_user_by( 'email', $info[0] );
-    			
-    		//	var_dump($group_meta); die();
-    			
+    		    			
     			if($user){
     				$user->set_role($group_meta['role']);
     				update_user_meta($user->ID, 'gm_group_id', $group['ID']);
     				update_user_meta($user->ID, 'interspire_list', $group_meta['group_interspire_list']);
     				
-    				return true;
+    				return false;
     			}
     			else{
     				$user_id = wp_insert_user(array(
@@ -442,6 +450,48 @@ class UgManagement{
     	    	
     }
     
+    
+    
+    /*
+     * create user with default csv uploader
+     * */
+    static function create_default_user($info, $defaults){
+    	
+    	$user = get_user_by( 'email', $info[0] );
+    		
+    	if($user){    	
+    		$user->set_role('subscriber');
+
+    		if($defaults['default-interspire-list']){
+    			update_user_meta($user->ID, 'interspire_list', $defaults['default-interspire-list']); 
+    		}
+    		   		   				
+    		return false;
+    	}
+    	else{
+    		$user_id = wp_insert_user(array(
+    			'user_login' => $info[0],
+    			'first_name' => $info[1],
+    			'user_nicename' => $info[2],
+    			'nickname' => $info[2],
+    			'user_email' => $info[0],
+    			'display_name' =>$info[1],
+    			'user_pass' => wp_generate_password( 12, false),
+    			'role' => 'subscriber'
+    		));
+    				
+    		if($user_id){
+    			
+	    		if($defaults['default-interspire-list']){
+	    			update_user_meta($user_id, 'interspire_list', $defaults['default-interspire-list']); 
+	    		}
+    			
+    			return true;
+    		}
+    	}
+    	
+    	return false;
+    }
       
     
     
@@ -556,6 +606,7 @@ class UgManagement{
 	
 		return $user;
 	}
+	
     
     
     //controlling registration procedure
@@ -670,7 +721,7 @@ class UgManagement{
      * */
     static function login_message($message){
     	if($_REQUEST['passwordreset'] == 'disabled'){
-    		$message = '<div id="login_error"><p><strong>Error: </strong> Password reset is not currently available </p></div>';
+    		$message = '<div id="login_error"><p> Password reset is not currently available </p></div>';
     	}
     	
     	return $message;

@@ -1,16 +1,11 @@
-<?php
-
+<?php 
 	@ set_time_limit(0);
-
-	if($_REQUEST['group_id'] > 0){
-		$group = $Ugdb->get_group($_REQUEST['group_id']);				
-	}
+	
+	$lists = self::get_interspire_lists();
+	$options = self::get_site_default_options();
 	
 	$message = array();
-	
-	//form is submitted
-	if($_POST['csv-uploader'] == 'Y'){
-		
+	if($_POST['default-csv-uploader'] == 'Y'){
 		$time_start = microtime(true);
 		
 		if(empty($_FILES['group_csv']['tmp_name'])){
@@ -37,16 +32,9 @@
 		        	$skipped = 0;
 	        		$imported = 0;
 		        	$csv->symmetrize();
-
-		        	//var_dump($csv->getHeaders());
-		        	
+        	
 		        	foreach ($csv->getRawArray() as $num => $csv_data) {
-		        		
-		        		//$csv_data = $csv->connect($csv_data);
-		        		
-		        	//	var_dump($csv_data);
-		        		
-		        		
+		        		    		
 		        		if($num == 0) continue;
 
 		        		if(!is_email($csv_data[0])){
@@ -54,13 +42,12 @@
 		        			continue;
 		        		}
 		        		
-		        		if(self::create_user($csv_data)){
+		        		if(self::create_default_user($csv_data, $options)){
 		        			$imported ++;
 		        		}
 		        		else{
 		        			$skipped ++;
-		        		}
-		        		
+		        		}		        		
 		        		
 		        	}
 		        			        	
@@ -79,11 +66,8 @@
 			}
 			
 		}
-
 		
 	}
-	
-	
 	
 ?>
 
@@ -107,14 +91,33 @@
 		}
 	?>
 	
-	<p>Group Name: <?php echo $group['name']; ?></p>
-	<p>Group Domain: <?php echo $group['domain']; ?> </p>
+	<p>Group Information: N/A</p>
+	
+	
 	
 	<form acton="" method="post" enctype="multipart/form-data">
 		
-		<input type="hidden" name="csv-uploader" value="Y" />
-		<input type="hidden" name="group_id" value="<?php echo $_REQUEST['group_id']; ?>">
+		<input type="hidden" name="default-csv-uploader" value="Y" />
 		
+		<p> 
+			Interspire List: 
+			<select name="interspire-list" style="min-width: 150px;">
+				<option value="">Choose</option>
+				
+				<?php 
+					if(count($lists) > 0){
+						foreach($lists as $list){
+							?>
+							<option <?php selected($list['listid'], $options['default-interspire-list']); ?> value="<?php echo $list['listid']; ?>"><?php echo $list['name']; ?></option>
+							<?php 
+						}
+					}							
+				?>	
+				
+			</select>
+		
+		 </p>
+			
 		<p>Upload a csv (.csv) file</p>
 		
 		<p> <input type="file" name="group_csv"  /> <input class="button button-primary" type="submit" value="Import"> </p>
