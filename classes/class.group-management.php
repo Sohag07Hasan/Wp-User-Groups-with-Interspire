@@ -40,7 +40,17 @@ class UgManagement{
 		
 		//filter registraion procedur with existing groups
 		add_filter('registration_errors', array(get_class(), 'registration_errors'), 10, 3);
-					
+		
+		
+		//attahch some group info with user meta when registration
+		add_action('user_register', array(get_class(), 'user_register'), 10, 1);
+		
+		
+		//restrict registration page and password reset page
+		add_action('login_init', array(get_class(), 'login_init'));
+		
+		//login page error message
+		add_filter('login_message', array(get_class(), 'login_message'), 10, 1);
 	}
 	
 	
@@ -48,10 +58,11 @@ class UgManagement{
 	
 	
 	static function test(){
-		$sync = self::get_synchronizer();
-		$lists = $sync->get_lists();
 		
-		var_dump($lists);
+		$user = get_userdata(1);
+		
+		var_dump($user);
+		
 		exit;
 	}
 	
@@ -447,6 +458,9 @@ class UgManagement{
     
     //prevent password reset
     static function prevent_password_reset($allow, $user_id){
+    	
+    	$default_options = self::get_site_default_options();
+    	   	
 		if(self::is_a_group_memeber($user_id)){
 			$allow = false;
 		}
@@ -530,9 +544,9 @@ class UgManagement{
 			}
 		}
 		
-		
-		
+		//filtering password to give the group password		
 		$user = apply_filters('wp_authenticate_user', $user, $password);
+		
 		if ( is_wp_error($user) )
 			return $user;
 	
@@ -557,7 +571,7 @@ class UgManagement{
     		if($group){
     			
     			//filtering password
-    			add_filter('random_password', array(get_class(), 'set_group_password'), 10, 1);
+    			add_filter('random_password', array(get_class(), 'set_group_password'), 10, 1);		
     			
     			self::$registered_user['group'] = $group;
     			self::$registered_user['user'] = array('login'=>$sanitized_user_login, 'email'=>$user_email);
@@ -574,6 +588,36 @@ class UgManagement{
     }
 	
     
+    //attach some meta data to the usermeta table using default settings and other settings
+    static function user_register($user_id){
+    	
+    	$user = get_userdata($user_id);
+    	
+    	if(isset(self::$registered_user['group'])){
+    		$Ugdb = new UgDbManagement();
+    		
+    		$group_meta = $Ugdb->get_group_metas(self::$registered_user['group']['ID']);  		
+    		
+    		if(!$group_meta['role']){
+    			$user->set_role($group_meta['role']);
+    		}
+	    
+	    	update_user_meta($user->ID, 'gm_group_id', self::$registered_user['group']['ID']);
+	    	update_user_meta($user->ID, 'interspire_list', $group_meta['group_interspire_list']);
+	    	  	   		    		
+    	}
+    	else{
+    		if($user->caps['subscriber'] || in_array('subscriber', $user->roles)){
+    			$default_site_options = self::get_site_default_options();
+    			
+    			if($default_site_options['default-interspire-list'] > 0){
+    				update_user_meta($user->ID, 'interspire_list', $default_site_options['default-interspire-list']);
+    			}
+    		}
+    	}
+    }
+    
+      
     
     //set the group password as default
     static function set_group_password($password){
@@ -592,7 +636,48 @@ class UgManagement{
     	return $password;
     }
 	
-	
+
+    
+    /*
+     * apply default site settings in login page
+     * */
+    static function login_init(){
+    	$action = $_REQUEST['action'];
+    	
+    	
+    	$default_options = self::get_site_default_options();
+    	
+    	
+    	if($action == 'register'){
+    	 	if ( $default_options['restrict-registration'] == 1 ) {
+				wp_redirect( site_url('wp-login.php?registration=disabled') );
+				exit();
+			}
+    	}   		
+    	
+    	if(in_array($action, array('retrievepassword', 'lostpassword'))){
+    		if($default_options['restrict-password-reset'] == 1){
+    			wp_redirect( site_url('wp-login.php?passwordreset=disabled') );
+				exit();
+    		}
+    	}
+    	
+    }
+    
+    
+    /*
+     * giving login message
+     * */
+    static function login_message($message){
+    	if($_REQUEST['passwordreset'] == 'disabled'){
+    		$message = '<div id="login_error"><p><strong>Error: </strong> Password reset is not currently available </p></div>';
+    	}
+    	
+    	return $message;
+    }
+    
+    
+    
     /*
      * bool if a memeber is a 
      * */
