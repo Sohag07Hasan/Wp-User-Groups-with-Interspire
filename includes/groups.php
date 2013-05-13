@@ -8,7 +8,7 @@
 
 
 <div class="wrap">
-	<h2>Under Contructions</h2>
+	<h2>User Group Management</h2>
 	
 	<?php 
 		if($message){

@@ -71,8 +71,9 @@ class InterSpireSync{
 					<usertoken>%s</usertoken>
 					<requesttype>lists</requesttype>
 					<requestmethod>GetLists</requestmethod>
-					<details>						
-					</details>
+					<details>	
+											
+            		</details>
 				</xmlrequest>';
 		
 		$xml = $this->format_xml($xml);

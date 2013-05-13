@@ -34,7 +34,7 @@
 				<td> <input <?php checked(1, $options['restrict-password-reset']); ?> id="restrict-password-rest" type="checkbox" value="1" name="restrict-password-reset" /> </td>
 			</tr>
 			<tr>
-				<th scope="row"><label for="restrict-registration">Redierct Registration Page</label></th>
+				<th scope="row"><label for="restrict-registration">Redirect Registration Page</label></th>
 				<td> <input <?php checked(1, $options['restrict-registration']); ?> id="restrict-registration" type="checkbox" value="1" name="restrict-registration" /> </td>
 			</tr>
 			<tr>

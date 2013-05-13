@@ -1,5 +1,10 @@
 <?php 
+	
+	//first one makes the system run for unlimited time
+	//second one is to detect automatic line eding. Sometimes csv created with Mac creates problem
+	
 	@ set_time_limit(0);
+	@ ini_set("auto_detect_line_endings", "1");
 	
 	$lists = self::get_interspire_lists();
 	$options = self::get_site_default_options();
@@ -73,7 +78,10 @@
 
 <div class="wrap">
 
-	<h2> Import Users </h2>
+	<h2> CSV Import (default group) </h2>
+	
+	<p style="color: green; font-stlye: italic;">CSV Import for default group only. To upload users into specific groups, please use the Group "edit screen" </p>
+	
 	
 	<?php 
 		if($message){
@@ -91,7 +99,7 @@
 		}
 	?>
 	
-	<p>Group Information: N/A</p>
+	<p>Group Information: Default Group</p>
 	
 	
 	

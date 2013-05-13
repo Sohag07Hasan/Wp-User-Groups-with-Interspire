@@ -1,7 +1,11 @@
 <?php
 
-	@ set_time_limit(0);
+	//first one makes the system run for unlimited time
+	//second one is to detect automatic line eding. Sometimes csv created with Mac creates problem
 
+	@ set_time_limit(0);
+	@ ini_set("auto_detect_line_endings", "1");
+	
 	if($_REQUEST['group_id'] > 0){
 		$group = $Ugdb->get_group($_REQUEST['group_id']);				
 	}

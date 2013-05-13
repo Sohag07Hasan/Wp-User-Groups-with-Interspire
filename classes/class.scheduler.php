@@ -5,7 +5,7 @@
 class InterspireScheduler{
 	
 	const hook = "interspire_schdeuler";
-	const interval = "everythreehour";
+	const interval = "everytwohour";
 	
 	static function init(){
 		
@@ -16,7 +16,7 @@ class InterspireScheduler{
 		
 		add_action(self::hook, array(get_class(), 'process_scheduler'));
 		
-	//	add_action('init', array(get_class(), 'process_scheduler'));
+	//	add_action('init', array(get_class(), 'scheduler_check'));
 		
 	}
 	
@@ -85,7 +85,7 @@ class InterspireScheduler{
 						select c.user_id from(
 							select count(*) as num, user_id  from $wpdb->usermeta where meta_key like 'interspire_list' or meta_key like 'interspire_status'  group by user_id 
 						) c where  c.num = 1
-		) limit 50" ;
+		) limit 100" ;
 		
 		$results = $wpdb->get_results($sql);
 
@@ -109,5 +109,11 @@ class InterspireScheduler{
 		
 	}
 	
+	
+	static function scheduler_check(){
+		$sch = wp_get_schedule(self::hook);
+		var_dump($sch);
+		die();
+	}
 	
 }
