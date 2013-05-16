@@ -4,8 +4,10 @@
 	if($_POST['default-site-settings']){
 		$options = array(
 			'restrict-password-reset' => isset($_POST['restrict-password-reset']) ? 1 : 0,
-			'restrict-registration'  => isset($_POST['restrict-registration']) ? 1 : 0,
-			'default-interspire-list' => $_POST['default-interspire-list']
+			'restrict-registration'   => isset($_POST['restrict-registration']) ? 1 : 0,
+			'default-interspire-list' => $_POST['default-interspire-list'],
+			'default-group-domain'    => $_POST['default-group-domain'],
+			'default-group-password'  => $_POST['default-group-password']
 		);
 		
 		update_option('default_site_options', $options);
@@ -37,6 +39,18 @@
 				<th scope="row"><label for="restrict-registration">Redirect Registration Page</label></th>
 				<td> <input <?php checked(1, $options['restrict-registration']); ?> id="restrict-registration" type="checkbox" value="1" name="restrict-registration" /> </td>
 			</tr>
+			
+			<tr>
+				<th scope="row"><label for="default-group-domain">Default Group Domain</label><br/>( separate with comma )   </th>
+				<td> <input size="60" id="default-group-domain" type="text" name="default-group-domain" value="<?php echo $options['default-group-domain']; ?>" /> </td>
+			</tr>
+			
+			<tr>
+				<th scope="row"><label for="default-group-password">Default Group Password</label></th>
+				<td> <input size="35" id="default-group-password" type="text" name="default-group-password" value="<?php echo $options['default-group-password']; ?>" /> </td>
+			</tr>
+			
+			
 			<tr>
 				<th scope="row"><label for="default-interspire-list">Default Interspire List</label></th>
 				<td>

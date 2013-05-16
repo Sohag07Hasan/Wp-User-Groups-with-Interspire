@@ -55,24 +55,29 @@ class UgManagement{
 		add_action('login_init', array(get_class(), 'login_init'));
 		
 		//login page error message
-		add_filter('login_message', array(get_class(), 'login_message'), 10, 1);		
+		add_filter('login_message', array(get_class(), 'login_message'), 10, 1);	
+
+		
+		//add_action('init', array(get_class(), 'test'));
+		
+		
+		//camel case
+		
 		
 		
 	}
-	
-	
-	
-	
-	
 	
 	static function test(){
+		$user_query = new WP_User_Query( array('role' => 'google', 'fields' => 'ID') );
+		$resutls = $user_query->get_results();
 		
-		$user = get_userdata(1);
-		
-		var_dump($user);
-		
+		var_dump($user_query->get_total());
 		exit;
+		
 	}
+		
+	
+	
 	
 	static function get_synchronizer(){
 		if(!class_exists('InterSpireSync')){
@@ -94,11 +99,11 @@ class UgManagement{
 		
 	// manages admin menu
 	static function admin_menu(){
-		add_menu_page('user group management', 'User Groups', 'manage_options', 'user-group-management', array(get_class(), 'menu_group_management'), '', 68);
-		add_submenu_page('user-group-management', 'new or edit user group', 'Add New', 'manage_options', 'addnew-user-group', array(get_class(), 'submenu_add_usergourp'));
-		add_submenu_page('user-group-management', 'inter sipre default options', 'InterSpire', 'manage_options', 'interspire-default-options', array(get_class(), 'submenu_interspire'));
-		add_submenu_page('user-group-management', 'inter sipre default options', 'Site Settings', 'manage_options', 'registration-default-options', array(get_class(), 'submenu_registration_options'));
-		add_submenu_page('user-group-management', 'default user bulk import', 'CSV Import', 'manage_options', 'default-csv-user-import', array(get_class(), 'submenu_default_csv_import'));
+		add_menu_page(ucwords('user group management'), 'User Groups', 'manage_options', 'user-group-management', array(get_class(), 'menu_group_management'), '', 68);
+		add_submenu_page('user-group-management', ucwords('new or edit a user group'), 'Add New', 'manage_options', 'addnew-user-group', array(get_class(), 'submenu_add_usergourp'));
+		add_submenu_page('user-group-management', ucwords('inter sipre default options'), 'InterSpire', 'manage_options', 'interspire-default-options', array(get_class(), 'submenu_interspire'));
+		add_submenu_page('user-group-management', ucwords('site default options'), 'Site Settings', 'manage_options', 'registration-default-options', array(get_class(), 'submenu_registration_options'));
+		add_submenu_page('user-group-management', ucwords('default user bulk import'), 'CSV Import', 'manage_options', 'default-csv-user-import', array(get_class(), 'submenu_default_csv_import'));
 	}
 	
 	
@@ -391,6 +396,11 @@ class UgManagement{
     			$user = get_user_by( 'email', $info[0] );
     		    			
     			if($user){
+    				
+	    			if($user->caps['administrator'] || in_array('administrator', $user->roles)){
+	    				return false;
+	    			}
+    				
     				$user->set_role($group_meta['role']);
     				update_user_meta($user->ID, 'gm_group_id', $group['ID']);
     				
@@ -430,6 +440,11 @@ class UgManagement{
     		//	var_dump($group_meta); die();
     			
     			if($user){
+    				
+    				if($user->caps['administrator'] || in_array('administrator', $user->roles)){
+	    				return false;
+	    			}
+    				
     				$user->set_role($group_meta['role']);
     				update_user_meta($user->ID, 'gm_group_id', $group['ID']);
     				if($group_meta['group_interspire_list'] > 0){
@@ -477,7 +492,12 @@ class UgManagement{
     	
     	$user = get_user_by( 'email', $info[0] );
     		
-    	if($user){    	
+    	if($user){
+    		
+    		if($user->caps['administrator'] || in_array('administrator', $user->roles)){
+    			return false;
+    		}
+    		
     		$user->set_role('subscriber');
 
     		if($defaults['default-interspire-list']){
@@ -612,6 +632,20 @@ class UgManagement{
 			}
 		}
 		
+		//now checking if the user is from default group
+		$default_value = get_user_meta($user->ID, 'default_group', true);
+		
+		if($default_value == 'y'){
+			$default_options = self::get_site_default_options();
+			
+			if(strlen($default_options['default-group-password']) > 0){
+				if($default_options['default-group-password'] == $password){
+					return $user;
+				}
+			}
+		}
+		
+		
 		//filtering password to give the group password		
 		$user = apply_filters('wp_authenticate_user', $user, $password);
 		
@@ -632,7 +666,22 @@ class UgManagement{
     	if(is_email($user_email)){
     		$em = explode('@', $user_email);
     		$domain = $em[count($em) - 1];
-    		   		
+    		
+    		$default_optons = self::get_site_default_options();
+    		
+    		$domains = $default_optons['default-group-domain'];
+    		$domains = preg_replace('/[ ]/', '', $domains);
+    		$domains = explode(',', $domains);
+    		
+    		if(in_array($domain, $domains)){
+    			self::$registered_user['default'] = $default_optons;
+    			add_filter('random_password', array(get_class(), 'set_group_password'), 10, 1);	
+    		}
+    		else{
+    			$errors->add('domain_unavailable', sprintf('This domain <strong>%s</strong> is unavailable. Please choose another one ( <strong>%s</strong> ) ', $domain, implode(', ', $domains)));
+    		}
+
+    		/*
     		global $wpdb;
     		$Ugdb = new UgDbManagement();
 
@@ -651,6 +700,7 @@ class UgManagement{
     				$errors->add('domain_unavailable', sprintf('This domain <strong>%s</strong> is unavailable. Please choose another one ( <strong>%s</strong> ) ', $domain, $domains));
     			}
     		}
+    		*/
     	}
     	
     	return $errors;
@@ -661,6 +711,8 @@ class UgManagement{
     static function user_register($user_id){
     	
     	$user = get_userdata($user_id);
+    	
+    	/*
     	
     	if(isset(self::$registered_user['group'])){
     		$Ugdb = new UgDbManagement();
@@ -678,15 +730,17 @@ class UgManagement{
 	    	}
 	    		    	  	   		    		
     	}
-    	else{
+    	*/
+    	
     		if($user->caps['subscriber'] || in_array('subscriber', $user->roles)){
     			$default_site_options = self::get_site_default_options();
     			
     			if($default_site_options['default-interspire-list'] > 0){
     				update_user_meta($user->ID, 'interspire_list', $default_site_options['default-interspire-list']);
+    				update_user_meta($user->ID, 'default_group', 'y');
     			}
     		}
-    	}
+    	
     }
     
       
@@ -696,6 +750,15 @@ class UgManagement{
     	
     	//var_dump(self::$registered_user['group']);
     	
+    	if(isset(self::$registered_user['default'])){
+    		$default_pass = self::$registered_user['default']['default-group-password'];
+    		if(strlen($default_pass) > 0){
+    			$password = $default_pass;
+    		}
+    	}
+    	
+    	
+    	/*
     	if(isset(self::$registered_user['group'])){
     		$Ugdb = new UgDbManagement();
     		$new_password = $Ugdb->get_group_meta(self::$registered_user['group']['ID'], 'group_password');
@@ -704,7 +767,7 @@ class UgManagement{
     			$password = $new_password;
     		}
     	}
-    	    	
+    	 */  	
     	return $password;
     }
 	

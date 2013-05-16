@@ -161,11 +161,11 @@ class UgListTable extends  WP_List_Table{
 	 * get total users of a group
 	 * */
 	function get_total_users($group_id){
-		global $wpdb;
-		$sql = "select count(user_id) from $wpdb->usermeta where meta_key like 'gm_group_id' and meta_value like '$group_id'";
+		$Ugdb = new UgDbManagement();
+		$role = $Ugdb->get_group_meta($group_id, 'role');
 		
-	//	return $sql;
-		return $wpdb->get_var($sql);
+		$user_query = new WP_User_Query( array('role' => $role, 'fields' => 'ID') );		
+		return $user_query->get_total(); 
 	}
 	
 	
