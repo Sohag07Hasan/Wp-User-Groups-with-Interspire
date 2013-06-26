@@ -8,7 +8,12 @@ class InterspireScheduler{
 	const interval = "everytwohour";
 
 	static function init(){
-
+		
+		/**
+		 * Due to unexpected error we avoid wordpress default scheduler. Instead we are using server cron 
+		 */
+		
+		/*
 		register_activation_hook(USERGROUPMANAGMENT_FILE, array(get_class(), 'activate_scheduler'));
 		register_deactivation_hook(USERGROUPMANAGMENT_FILE, array(get_class(), 'deactivate_scheduler'));
 
@@ -20,12 +25,27 @@ class InterspireScheduler{
 			add_action('init', array(get_class(), 'activate_scheduler'));
 		}
 		
-			
+		*/	
+		
+		add_action('init', array(get_class(), 'manage_server_cron'));
 
 	}
-
+	
+	
+	/**
+	 *Sever cron will be initiated with server or external resources
+	 **/
+	static function manage_server_cron(){
+		if($_REQUEST['interspire_cron'] == 'process_scheduler'){
+			self::process_scheduler();
+			exit;
+		}
+	}
+	
+	
 
 	static function activate_scheduler(){
+		//return self::deactivate_scheduler();
 		if(!wp_next_scheduled(self::hook)) {
 			wp_schedule_event( current_time( 'timestamp' ), self::interval, self::hook);
 		}
@@ -71,9 +91,11 @@ class InterspireScheduler{
 		$user_query = self::get_unsynchronized_users($offset, $limit);
 		
 		$users = $user_query->get_results();		
-		$count_user = $user_query->get_total();
-
-		//var_dump($users);
+		$count_user = count($users);
+		
+		//var_dump($count_user);
+		
+		
 		
 		//resetting the offset if it reaches the final point of db table
 		if($limit > $count_user){
@@ -85,7 +107,6 @@ class InterspireScheduler{
 		
 		//saving the offset in database for further query
 		update_option('interspire_sync_offset', $offset);
-
 		
 		if($users){
 
@@ -117,13 +138,15 @@ class InterspireScheduler{
 			'offset'        => $offset,
 			'number'        => $number,
 			'fields'        => array('ID', 'user_email'),
-			'orderby'       => 'ID'
+			'orderby'       => 'ID',
+			'count_total'   => false
 		);
 		
 		if(is_multisite()){
 			$query['blog_id'] = get_current_blog_id();
 		}
-
+		
+		
 		
 		$user_query = new WP_User_Query($query);
 		

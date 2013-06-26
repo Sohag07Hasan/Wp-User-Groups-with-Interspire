@@ -34,4 +34,10 @@
 		
 	</form>
 	
+	<h4>Alterative Approach</h4>
+	<p style="color: green">
+		Use this url to run a cron script externally. It will synchronize 300 contacts for each operation
+	</p>
+	<p> <input type="text" size="65" value="<?php echo add_query_arg(array('interspire_cron'=>'process_scheduler'), get_option('siteurl')); ?>" readonly /> </p>
+	
 </div>
