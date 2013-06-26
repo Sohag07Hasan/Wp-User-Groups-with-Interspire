@@ -22,7 +22,7 @@ class UgManagement{
 		
 		
 		register_activation_hook(USERGROUPMANAGMENT_FILE, array(get_class(), 'manage_db'));
-	//	register_deactivation_hook(USERGROUPMANAGMENT_FILE, array(get_class(), 'deactivated_plugin'));
+		//register_deactivation_hook(USERGROUPMANAGMENT_FILE, array(get_class(), 'deactivated_plugin'));
 
 		
 		//for submissions
@@ -56,29 +56,67 @@ class UgManagement{
 		
 		//login page error message
 		add_filter('login_message', array(get_class(), 'login_message'), 10, 1);	
+		add_action('delete_user', array(get_class(), 'unsubscribe_the_user'), 10);
+		
+		
+		//add_filter('login_url', array(get_class(), 'login_url'), 10, 2);
 
 		
-		//add_action('init', array(get_class(), 'test'));
+	//	add_action('init', array(get_class(), 'test'));
 		
 		
 		//camel case
 		
 		
+		//mulitisite verificatin
+		add_filter('wpmu_validate_user_signup', array(get_class(), 'wpmu_validate_user_signup'), 10, 1);
+		add_action('wpmu_activate_user', array(get_class(), 'set_default_user_meta'), 10, 3);
+		add_action('activate_header', array(get_class(), 'replace_group_password'));
+		add_action('remove_user_from_blog', array(get_class(), 'unsubscribe_the_user'));
+		add_action('wpmu_delete_user', array(get_class(), 'unsubscribe_the_user'));
+		
+		//single installation
+				
 		
 	}
+	
+	
+	/*
+	 * Interspire scheduler
+	 * */
+	static function interspire_scheduler(){
+		include USERGROUPMANAGMENT_DIR . '/includes/parallel-scheduler.php';
+	}
+	
+	
 	
 	static function test(){
-		$user_query = new WP_User_Query( array('role' => 'google', 'fields' => 'ID') );
-		$resutls = $user_query->get_results();
-		
-		var_dump($user_query->get_total());
-		exit;
-		
+		$Ugdb = new UgDbManagement();
+		$status = $Ugdb->check_if_tables_installed();
+
+		if(false === $status){
+			var_dump("not exists");
+		}
 	}
 		
 	
 	
+	static function login_url($url, $redirect){
+		
+	}
+
 	
+	/*
+	 * it will fire when a user is deleted from a blog, from the network (ms)
+	 * it will fire also when a user is delted from single installation
+	 * */
+	static function unsubscribe_the_user($id){
+		return InterspireScheduler::unsubscribe_user($id);
+	}
+	
+	
+	
+	//return the interspire class object
 	static function get_synchronizer(){
 		if(!class_exists('InterSpireSync')){
 			include USERGROUPMANAGMENT_DIR . '/classes/class.interspire.php';
@@ -104,6 +142,7 @@ class UgManagement{
 		add_submenu_page('user-group-management', ucwords('inter sipre default options'), 'InterSpire', 'manage_options', 'interspire-default-options', array(get_class(), 'submenu_interspire'));
 		add_submenu_page('user-group-management', ucwords('site default options'), 'Site Settings', 'manage_options', 'registration-default-options', array(get_class(), 'submenu_registration_options'));
 		add_submenu_page('user-group-management', ucwords('default user bulk import'), 'CSV Import', 'manage_options', 'default-csv-user-import', array(get_class(), 'submenu_default_csv_import'));
+		add_submenu_page('user-group-management', ucwords('Scheduler'), 'Scheduler', 'manage_options', 'scheduler', array(get_class(), 'interspire_scheduler'));
 	}
 	
 	
@@ -301,7 +340,8 @@ class UgManagement{
 		
 	
 	static function deactivated_plugin(){
-		
+		$Ugdb = new UgDbManagement();
+		return $Ugdb->drop_tables();
 	}
 	
 	
@@ -396,18 +436,6 @@ class UgManagement{
     			$user = get_user_by( 'email', $info[0] );
     		    			
     			if($user){
-    				
-	    			if($user->caps['administrator'] || in_array('administrator', $user->roles)){
-	    				return false;
-	    			}
-    				
-    				$user->set_role($group_meta['role']);
-    				update_user_meta($user->ID, 'gm_group_id', $group['ID']);
-    				
-    				if($group_meta['group_interspire_list'] > 0){
-    					update_user_meta($user->ID, 'interspire_list', $group_meta['group_interspire_list']);
-    				}
-    				
     				return false;
     			}
     			else{
@@ -437,21 +465,8 @@ class UgManagement{
     		
     			$user = get_user_by( 'email', $info[0] );
     			
-    		//	var_dump($group_meta); die();
-    			
     			if($user){
-    				
-    				if($user->caps['administrator'] || in_array('administrator', $user->roles)){
-	    				return false;
-	    			}
-    				
-    				$user->set_role($group_meta['role']);
-    				update_user_meta($user->ID, 'gm_group_id', $group['ID']);
-    				if($group_meta['group_interspire_list'] > 0){
-    					update_user_meta($user->ID, 'interspire_list', $group_meta['group_interspire_list']);
-    				}
-    				
-    				return true;
+    				return false;	
     			}
     			else{
     				$user_id = wp_insert_user(array(
@@ -493,17 +508,6 @@ class UgManagement{
     	$user = get_user_by( 'email', $info[0] );
     		
     	if($user){
-    		
-    		if($user->caps['administrator'] || in_array('administrator', $user->roles)){
-    			return false;
-    		}
-    		
-    		$user->set_role('subscriber');
-
-    		if($defaults['default-interspire-list']){
-    			update_user_meta($user->ID, 'interspire_list', $defaults['default-interspire-list']); 
-    		}
-    		   		   				
     		return false;
     	}
     	else{
@@ -547,7 +551,9 @@ class UgManagement{
     //prevent password reset
     static function prevent_password_reset($allow, $user_id){
     	
-    	$default_options = self::get_site_default_options();
+    	//$default_options = self::get_site_default_options();
+    	
+    	//var_dump($allow); exit;
     	   	
 		if(self::is_a_group_memeber($user_id)){
 			$allow = false;
@@ -663,6 +669,9 @@ class UgManagement{
     
     //controlling registration procedure
     static function registration_errors($errors, $sanitized_user_login, $user_email){
+    	
+    //	var_dump($errors); exit;
+    	
     	if(is_email($user_email)){
     		$em = explode('@', $user_email);
     		$domain = $em[count($em) - 1];
@@ -680,58 +689,104 @@ class UgManagement{
     		else{
     			$errors->add('domain_unavailable', sprintf('This domain <strong>%s</strong> is unavailable. Please choose another one ( <strong>%s</strong> ) ', $domain, implode(', ', $domains)));
     		}
-
-    		/*
-    		global $wpdb;
-    		$Ugdb = new UgDbManagement();
-
-    		$group = $Ugdb->get_group_by('domain', $domain);
-    		if($group){
-    			
-    			//filtering password
-    			add_filter('random_password', array(get_class(), 'set_group_password'), 10, 1);		
-    			
-    			self::$registered_user['group'] = $group;
-    			self::$registered_user['user'] = array('login'=>$sanitized_user_login, 'email'=>$user_email);
-    		}
-    		else{
-    			$domains = $Ugdb->any_domain_exists();    			    			
-    			if(!empty($domain)){
-    				$errors->add('domain_unavailable', sprintf('This domain <strong>%s</strong> is unavailable. Please choose another one ( <strong>%s</strong> ) ', $domain, $domains));
-    			}
-    		}
-    		*/
+    		    		
     	}
     	
     	return $errors;
     }
 	
     
+    //ms
+	static function wpmu_validate_user_signup($result){
+		
+		$user_email = $result['user_email'];
+		$errors = $result['errors'];
+		
+		if(is_email($user_email)){
+			$em = explode('@', $user_email);
+    		$domain = $em[count($em) - 1];
+    		
+    		$default_optons = self::get_site_default_options();
+    		
+    		$domains = $default_optons['default-group-domain'];
+
+    		if(strlen($domains) > 3){
+    		
+	    		$domains = preg_replace('/[ ]/', '', $domains);
+	    		$domains = explode(',', $domains);
+	    		
+	    		if(!in_array($domain, $domains)){
+	    			$errors->add('user_email', sprintf('This domain <strong>%s</strong> is unavailable. Please choose another one ( <strong>%s</strong> ) ', $domain, implode(', ', $domains)));
+	    			self::$registered_user['default'] = $default_optons;
+	    			add_filter('random_password', array(get_class(), 'set_group_password'), 10, 1);	
+	    		}
+    		
+    		}
+    		
+		}
+		
+		$result['errors'] = $errors;
+				
+		return $result;
+		
+	}
+	
+	
+	/*
+	 * it will use when someone activates his account from verification link (ms)
+	 * */
+	static function use_group_password($result){
+		if(is_multisite()){			
+			add_filter('random_password', array(get_class(), 'replace_with_default_password'), 10, 1);			
+		}
+
+		return $result;
+	}
+	
+	
+	//hook to filter the default password
+	static function replace_group_password(){
+		add_filter('random_password', array(get_class(), 'replace_with_default_password'), 10, 1);	
+	}
+	
+	
+	//replaces random password with default pass (ms)
+	static function replace_with_default_password($password){
+		$default_optons = self::get_site_default_options();
+		if(isset($default_optons['default-group-password']) && !empty($default_optons['default-group-password'])){
+			$password = $default_optons['default-group-password'];
+		}
+		
+		return $password;
+	}
+    
+	
+	//ms attach default interspire and group list with a verified user
+	static function set_default_user_meta($info){
+		$user_id = $info['user_id'];
+		$default_optons = self::get_site_default_options();
+		
+		if($default_optons['default-interspire-list'] > 0){
+			update_user_meta($user->ID, 'interspire_list', $default_site_options['default-interspire-list']);
+    		update_user_meta($user->ID, 'default_group', 'y');
+		}
+	}
+	
+	
+	//ms showing error messages
+	static function show_custom_signup_message($errors){
+		if ( $errmsg = $errors->get_error_message('domain_unavailable') ) {
+			echo '<p class="error">' . $errmsg . '</p>';
+		}
+	}
+	
+    
+    
     //attach some meta data to the usermeta table using default settings and other settings
     static function user_register($user_id){
     	
     	$user = get_userdata($user_id);
-    	
-    	/*
-    	
-    	if(isset(self::$registered_user['group'])){
-    		$Ugdb = new UgDbManagement();
-    		
-    		$group_meta = $Ugdb->get_group_metas(self::$registered_user['group']['ID']);  		
-    		
-    		if(!$group_meta['role']){
-    			$user->set_role($group_meta['role']);
-    		}
-	    
-	    	update_user_meta($user->ID, 'gm_group_id', self::$registered_user['group']['ID']);
-	    	
-	    	if($group_meta['group_interspire_list'] > 0){
-	    		update_user_meta($user->ID, 'interspire_list', $group_meta['group_interspire_list']);
-	    	}
-	    		    	  	   		    		
-    	}
-    	*/
-    	
+
     		if($user->caps['subscriber'] || in_array('subscriber', $user->roles)){
     			$default_site_options = self::get_site_default_options();
     			
@@ -756,18 +811,7 @@ class UgManagement{
     			$password = $default_pass;
     		}
     	}
-    	
-    	
-    	/*
-    	if(isset(self::$registered_user['group'])){
-    		$Ugdb = new UgDbManagement();
-    		$new_password = $Ugdb->get_group_meta(self::$registered_user['group']['ID'], 'group_password');
-    		
-    		if(strlen($new_password) > 0){
-    			$password = $new_password;
-    		}
-    	}
-    	 */  	
+    	    	 	
     	return $password;
     }
 	
@@ -777,11 +821,9 @@ class UgManagement{
      * apply default site settings in login page
      * */
     static function login_init(){
-    	$action = $_REQUEST['action'];
+    	$action = $_REQUEST['action'];    	
     	
-    	
-    	$default_options = self::get_site_default_options();
-    	
+    	$default_options = self::get_site_default_options();    	
     	
     	if($action == 'register'){
     	 	if ( $default_options['restrict-registration'] == 1 ) {

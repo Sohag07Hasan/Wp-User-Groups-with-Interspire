@@ -121,16 +121,21 @@ class InterSpireSync{
 						<confirmed>yes</confirmed>
 						<customfields>
 							<item>
-								<fieldid>Title</fieldid>
+								<fieldid>2</fieldid>
 								<value>%s</value>
 							</item>
 						</customfields>			
 					</details>
 				</xmlrequest>';
 		
+		
 		$xml = sprintf($xml, $this->username, $this->token, $data['email'], $data['interspire_list'], $data['nickname']);
 	
+	//	var_dump($xml);
+		
 		$request = $this->authRequest('POST', $this->path, $xml);
+		
+	//	var_dump($request);
 					
 		if(in_array($request['http_code'], array(200, 201))){
 			$xml = @ simplexml_load_string($request['response']);
@@ -142,6 +147,39 @@ class InterSpireSync{
 		}
 		
 		return false;
+	}
+	
+	
+	//unsubscirbe
+	function unsubscribe_user($data){
+		$xml = '<xmlrequest>
+			<username>%s</username>
+			<usertoken>%s</usertoken>
+			<requesttype>subscribers</requesttype>
+			<requestmethod>DeleteSubscriber</requestmethod>
+			<details>
+				<emailaddress>%s</emailaddress>
+				<list>%s</list>
+			</details>
+		</xmlrequest>';
+		
+		$xml = sprintf($xml, $this->username, $this->token, $data['email'], $data['interspire_list']);
+			
+		
+		$request = $this->authRequest('POST', $this->path, $xml);
+					
+		
+		if(in_array($request['http_code'], array(200, 201))){
+			$xml = @ simplexml_load_string($request['response']);
+			
+			if( (string) $xml->status == 'SUCCESS'){
+				return $xml;
+			}
+			
+		}
+		
+		return false;
+		
 	}
 	
 		

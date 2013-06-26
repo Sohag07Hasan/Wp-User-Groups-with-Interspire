@@ -1,4 +1,20 @@
 <?php 
+
+	/*
+	 * multisite compatible
+	 * */
+	
+	if(is_multisite()){
+		$Ugdb = new UgDbManagement();
+		$status = $Ugdb->check_if_tables_installed();
+
+		if(false === $status){
+			$Ugdb->manage_db();
+		}
+	}
+
+
+
 	$action = admin_url('admin.php?page=addnew-user-group');
 	
 	

@@ -71,7 +71,7 @@
 		        	 $exec_time = microtime(true) - $time_start;
 		        	 
 		        	 $message['updated'][] = 'Total user added: ' . $imported;
-		        	 $message['updated'][] = 'Total user skipped due to domain unmatched error: ' . $skipped;
+		        	 $message['updated'][] = 'Total user skipped due to domain unmatched or alreay exists error: ' . $skipped;
 		        	 $message['updated'][] = 'Total user aborted due to wrong email: ' . $aborted;
 		        	 $message['updated'][] = sprintf('Total time required: %.2f seconds' , $exec_time);
 		        	 
@@ -120,6 +120,7 @@
 		<input type="hidden" name="group_id" value="<?php echo $_REQUEST['group_id']; ?>">
 		
 		<p>Upload a csv (.csv) file</p>
+		<p style="font-size: 15px;"> csv format <span style="color: #A52A2A;">(email,name,surname)</span> </p>
 		
 		<p> <input type="file" name="group_csv"  /> <input class="button button-primary" type="submit" value="Import"> </p>
 				

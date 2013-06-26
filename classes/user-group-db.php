@@ -40,6 +40,14 @@ class UgDbManagement{
 	}
 	
 	
+	//mu compatible
+	function check_if_tables_installed(){
+		global $wpdb;
+		$sql = "select 1 from $this->group";
+		return $wpdb->query($sql);
+	}
+	
+	
 	function drop_tables(){
 		global $wpdb;
 		$wpdb->query("drop table $this->group");

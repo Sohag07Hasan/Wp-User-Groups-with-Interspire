@@ -128,6 +128,8 @@
 			
 		<p>Upload a csv (.csv) file</p>
 		
+		<p style="font-size: 15px;"> csv format <span style="color: #A52A2A;">(email,name,surname)</span> </p>
+		
 		<p> <input type="file" name="group_csv"  /> <input class="button button-primary" type="submit" value="Import"> </p>
 				
 		
